@@ -109,11 +109,13 @@
                             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
                         </svg>
                         <p class="mb-2 text-sm text-gray-400"><span class="font-semibold text-emerald-400">Click to upload</span> or drag and drop</p>
-                        <p class="text-xs text-gray-500">PNG, JPG, or WEBP</p>
+                        <p class="text-xs text-gray-500">PNG, JPG, or WEBP (Max 10MB)</p>
                     </div>
                 </label>
                 <input id="file-upload" type="file" class="hidden" accept="image/png, image/jpeg, image/webp" />
                 
+                <p id="error-message" class="text-red-400 text-center text-sm mt-4 hidden"></p>
+
                 <div id="image-preview-container" class="mt-6 hidden text-center">
                     <p class="text-gray-400 mb-4">Your selected image:</p>
                     <img id="image-preview" src="#" alt="Image Preview" class="max-w-full max-h-80 mx-auto rounded-lg shadow-md"/>
@@ -161,6 +163,7 @@
         const resultActions = document.getElementById('result-actions');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const errorMessage = document.getElementById('error-message');
         let originalImage = null;
 
         dropZone.addEventListener('dragover', (e) => {
@@ -186,22 +189,62 @@
         convertBtn.addEventListener('click', processImage);
         restartBtn.addEventListener('click', resetApp);
 
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function clearError() {
+            errorMessage.textContent = '';
+            errorMessage.classList.add('hidden');
+        }
+
         function handleFileSelect(e) {
+            clearError();
+            imagePreviewContainer.classList.add('hidden');
             const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
+
+            if (!file) return;
+
+            const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                showError('Invalid file format. Please upload a PNG, JPG, or WEBP.');
+                fileUpload.value = '';
+                return;
+            }
+
+            const maxSize = 10 * 1024 * 1024; // 10 MB
+            if (file.size > maxSize) {
+                showError('File is too large. Please upload an image under 10MB.');
+                fileUpload.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                originalImage = new Image();
+                originalImage.onload = () => {
                     imagePreview.src = event.target.result;
                     imagePreviewContainer.classList.remove('hidden');
-                    originalImage = new Image();
-                    originalImage.src = event.target.result;
                 };
-                reader.readAsDataURL(file);
-            }
+                originalImage.onerror = () => {
+                    showError('Could not load the image. The file might be corrupted.');
+                    fileUpload.value = '';
+                };
+                originalImage.src = event.target.result;
+            };
+            reader.onerror = () => {
+                showError('Failed to read the file. Please try again.');
+                fileUpload.value = '';
+            };
+            reader.readAsDataURL(file);
         }
         
         function processImage() {
-            if (!originalImage) return;
+            if (!originalImage || originalImage.width === 0) {
+                showError('Could not process image. Please re-upload a valid image.');
+                return;
+            }
 
             startScreen.classList.add('hidden');
             resultScreen.classList.remove('hidden');
@@ -210,31 +253,37 @@
             canvas.classList.add('hidden');
 
             setTimeout(() => {
-                canvas.width = originalImage.width;
-                canvas.height = originalImage.height;
-                ctx.drawImage(originalImage, 0, 0);
+                try {
+                    canvas.width = originalImage.width;
+                    canvas.height = originalImage.height;
+                    ctx.drawImage(originalImage, 0, 0);
 
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
 
-                for (let i = 0; i < data.length; i += 4) {
-                    const r = data[i];
-                    const g = data[i + 1];
-                    const b = data[i + 2];
-                    const hsl = rgbToHsl(r, g, b);
-                    const h = hsl[0];
-                    const s = hsl[1];
-                    const l = hsl[2];
-                    const newHue = 120 / 360; 
-                    const newSaturation = Math.min(s * 1.5, 1);
-                    const newRgb = hslToRgb(newHue, newSaturation, l);
-                    data[i] = newRgb[0];
-                    data[i + 1] = newRgb[1];
-                    data[i + 2] = newRgb[2];
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+                        const hsl = rgbToHsl(r, g, b);
+                        const s = hsl[1];
+                        const l = hsl[2];
+                        const newHue = 120 / 360; 
+                        const newSaturation = Math.min(s * 1.5, 1);
+                        const newRgb = hslToRgb(newHue, newSaturation, l);
+                        data[i] = newRgb[0];
+                        data[i + 1] = newRgb[1];
+                        data[i + 2] = newRgb[2];
+                    }
+
+                    ctx.putImageData(imageData, 0, 0);
+                    downloadBtn.href = canvas.toDataURL('image/png');
+                } catch (error) {
+                    resetApp();
+                    showError('An unexpected error occurred during conversion. Please try another image.');
+                    return;
                 }
-
-                ctx.putImageData(imageData, 0, 0);
-                downloadBtn.href = canvas.toDataURL('image/png');
+                
                 loadingSpinner.classList.add('hidden');
                 canvas.classList.remove('hidden');
                 resultActions.classList.remove('hidden');
@@ -249,6 +298,7 @@
             imagePreviewContainer.classList.add('hidden');
             startScreen.classList.remove('hidden');
             resultScreen.classList.add('hidden');
+            clearError();
         }
 
         function rgbToHsl(r, g, b) {
