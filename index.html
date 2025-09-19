@@ -3,7 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Greenify - Green Image Filter</title>
+    <title>Greenify</title>
+
+    <meta name="description" content="Greenify is a simple, single-page web application that allows you to upload an image and apply a vibrant green filter to it. The processed image can then be downloaded directly to your device.">
+    <meta name="theme-color" content="#25bd12">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Greenify">
+    <meta property="og:description" content="Greenify is a simple, single-page web application that allows you to upload an image and apply a vibrant green filter to it. The processed image can then be downloaded directly to your device.">
+    <meta property="og:image" content="https://greenify.lol/greenify-icon.png">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="Greenify">
+    <meta property="twitter:description" content="Greenify is a simple, single-page web application that allows you to upload an image and apply a vibrant green filter to it. The processed image can then be downloaded directly to your device.">
+    <meta property="twitter:image" content="https://greenify.lol/greenify-icon.png">
+
+    <link rel="icon" href="https://greenify.lol/greenify-icon.png" type="image/png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -213,7 +229,7 @@
                 return;
             }
 
-            const maxSize = 10 * 1024 * 1024; // 10 MB
+            const maxSize = 10 * 1024 * 1024;
             if (file.size > maxSize) {
                 showError('File is too large. Please upload an image under 10MB.');
                 fileUpload.value = '';
