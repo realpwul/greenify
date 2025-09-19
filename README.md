@@ -9,6 +9,12 @@ Using Greenify is straightforward:
 
 1.  **Upload Your Image:** You can either click the upload area to select an image from your computer or simply drag and drop an image file onto it.
     
+    -   **Supported formats:** PNG, JPG, or WEBP.
+        
+    -   **Maximum size:** 10MB.
+        
+    -   The application will display an error message if the file is not a supported format or is too large.
+        
 2.  **Preview and Convert:** A preview of your selected image will appear. If you're happy with it, click the "Convert to Green" button.
     
 3.  **Download:** The website will process the image and display the green-filtered result. You can then click the "Download Image" button to save it or "Start Over" to try with a new image.
